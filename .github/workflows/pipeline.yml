@@ -28,3 +28,26 @@ jobs:
 
       - name: Build the Docker image
         run: docker build -t myapi:${{ github.sha }} app/
+
+      - name: SCA + secret scan (Trivy filesystem)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: app/
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: IaC scan (report only, for now)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: infra/
+          exit-code: 0
+
+      - name: Container image scan (report only)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: myapi:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: 0
