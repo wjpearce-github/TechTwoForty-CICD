@@ -51,3 +51,21 @@ jobs:
           image-ref: myapi:${{ github.sha }}
           severity: HIGH,CRITICAL
           exit-code: 0
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::ACCOUNT_ID:role/github-deploy
+          aws-region: eu-west-2
+
+      - name: Deploy
+        run: echo "push image to ECR + update service here"
