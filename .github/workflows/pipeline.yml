@@ -58,14 +58,36 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      # Phase 5: replace ACCOUNT_ID with your 12-digit AWS account number.
+      DEPLOY_ROLE: arn:aws:iam::ACCOUNT_ID:role/github-deploy
     steps:
       - uses: actions/checkout@v4
 
+      # Until ACCOUNT_ID is replaced (like on the template repo), this step
+      # says what to set up and the two steps after it skip.
+      - name: "Deploy skipped: set up AWS first"
+        if: contains(env.DEPLOY_ROLE, 'ACCOUNT_ID')
+        run: |
+          echo "::notice title=Deploy skipped: set up AWS first::Every gate passed. Make the github-deploy role, then replace ACCOUNT_ID in DEPLOY_ROLE to deploy. The run summary lists the steps."
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Deploy skipped: the deploy role is not filled in yet
+
+          Every gate in the build job passed. To let the deploy job sign in to AWS:
+
+          1. **Phase 4:** make the `github-deploy` role, trusted through OIDC.
+          2. **Phase 5:** in `.github/workflows/pipeline.yml`, replace `ACCOUNT_ID` in the `DEPLOY_ROLE` line with your 12-digit AWS account number.
+
+          Push that change and this job signs in to AWS with no stored keys.
+          EOF
+
       - name: Configure AWS credentials (OIDC)
+        if: ${{ !contains(env.DEPLOY_ROLE, 'ACCOUNT_ID') }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::ACCOUNT_ID:role/github-deploy
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
           aws-region: eu-west-2
 
       - name: Deploy
+        if: ${{ !contains(env.DEPLOY_ROLE, 'ACCOUNT_ID') }}
         run: echo "push image to ECR + update service here"

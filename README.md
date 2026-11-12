@@ -21,8 +21,10 @@
 | **Runs on** | GitHub Actions, your capstone repo, and an AWS account for the deploy role |
 | **Deliverable** | A pipeline that gates every change on tests and scans, deploys through a short-lived role with no stored keys, and is a required check on `main` |
 
-> [!WARNING]
-> **GitHub Actions is switched off on this template repo.** There is no AWS account behind it, so the deploy job could never sign in. In **your** repo the pipeline runs on every push and pull request.
+> [!NOTE]
+> [![CI/CD Pipeline](https://github.com/wjpearce-github/TechTwoForty-CICD/actions/workflows/pipeline.yml/badge.svg)](https://github.com/wjpearce-github/TechTwoForty-CICD/actions/workflows/pipeline.yml)
+>
+> **The pipeline runs on this template repo.** Open the [Actions tab](https://github.com/wjpearce-github/TechTwoForty-CICD/actions) to see build, test and the three scans run against this code. There is no AWS account behind it, so `ACCOUNT_ID` is still a placeholder and the deploy job stops at a step called **Deploy skipped: set up AWS first**. In **your** repo, once you replace `ACCOUNT_ID` (Phase 5), the pipeline runs and deploys on every push and pull request.
 
 ## The big picture
 
@@ -89,7 +91,7 @@ aws iam create-role --role-name github-deploy --assume-role-policy-document file
 The role has **no permissions** yet, on purpose. The capstone builds the real, least-privilege deploy role.
 
 ### Phase 5 · The deploy job
-Replace `ACCOUNT_ID` in the `role-to-assume` line before you push. `needs: build` is the gate: if anything upstream is red, deploy never runs.
+Replace `ACCOUNT_ID` in the `DEPLOY_ROLE` line before you push. Until you do, the deploy job skips the AWS steps and says what is missing. `needs: build` is the gate: if anything upstream is red, deploy never runs.
 
 ### Phase 6 · Close the gate
 Merge the pipeline PR. Then Settings, Branches, the `main` rule, **Require status checks to pass**: search for and select `build`. From now on the merge button stays grey until the pipeline is green.
@@ -105,7 +107,7 @@ Merge the pipeline PR. Then Settings, Branches, the `main` rule, **Require statu
 
 | Mistake | What happens | The fix |
 |---|---|---|
-| Forgetting to replace `ACCOUNT_ID` | The credentials step fails | Put your account number in both places |
+| Forgetting to replace `ACCOUNT_ID` | The deploy job stops at **Deploy skipped: set up AWS first** | Put your account number in the trust policy and the `DEPLOY_ROLE` line |
 | Missing `permissions: id-token: write` | OIDC cannot get a token | It sits on the deploy job |
 | Trust policy subject typo | `Not authorized to perform sts:AssumeRoleWithWebIdentity` | Print the IDs again and compare, character by character |
 | Committing straight to main | Rejected: main is protected | Branch, push, PR, merge |
